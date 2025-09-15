@@ -22,22 +22,23 @@ def test_missing_fields(client, payload):
     assert data["error"] is not None
 
 
-@pytest.mark.parametrize("input_type,input_value", [
-    ("binary", "2"),
-    ("binary", "102"),
-    ("octal", "89"),
-    ("decimal", "12.3"),
-    ("decimal", "abc"),
-    ("hexadecimal", "g1"),
-    ("base64", "not-base64!!"),
-    ("text", "eleventy"),  # unsupported text word in implementation
+@pytest.mark.parametrize("input_type,input_value,expected_msg_substr", [
+    ("binary", "2", "Invalid binary input"),
+    ("binary", "102", "Invalid binary input"),
+    ("octal", "89", "Invalid octal input"),
+    ("decimal", "12.3", "Invalid decimal input"),
+    ("decimal", "abc", "Invalid decimal input"),
+    ("hexadecimal", "g1", "Invalid hexadecimal input"),
+    ("base64", "not-base64!!", "Invalid base64 input"),
+    ("text", "eleventy", "Invalid text input"),
 ])
-def test_invalid_inputs(client, input_type, input_value):
+def test_invalid_inputs(client, input_type, input_value, expected_msg_substr):
     resp = post(client, {"input": input_value, "inputType": input_type, "outputType": "decimal"})
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["result"] is None
     assert data["error"] is not None
+    assert expected_msg_substr in data["error"]
 
 
 @pytest.mark.parametrize("output_type", ["binary", "octal", "decimal", "hexadecimal", "base64", "text"])
@@ -45,13 +46,10 @@ def test_negative_numbers_from_decimal_handled_or_rejected(client, output_type):
     resp = post(client, {"input": "-42", "inputType": "decimal", "outputType": output_type})
     assert resp.status_code == 200
     data = resp.get_json()
-    # Implementation may choose to support negatives for non-base64 or reject them; both are acceptable.
     if output_type == "base64":
-        # Our suite expects rejection for base64 negatives
         assert data["result"] is None
-        assert data["error"] is not None
+        assert "Base64 does not support negative integers" in data["error"]
     else:
-        # For other outputs, accept either a valid result or an error string, but no crash
         assert "error" in data
 
 
@@ -69,13 +67,19 @@ def test_base64_roundtrip_mismatch_endianness_expected_to_fail(client):
     assert "error" in data
 
 
-@pytest.mark.parametrize("input_type", ["binary", "octal", "decimal", "hexadecimal", "base64"]) 
-def test_invalid_output_type(client, input_type):
-    resp = post(client, {"input": "1", "inputType": input_type, "outputType": "unknown"})
+@pytest.mark.parametrize("input_type,input_value", [
+    ("binary", "1"),
+    ("octal", "7"),
+    ("decimal", "1"),
+    ("hexadecimal", "a"),
+    ("base64", base64.b64encode((1).to_bytes(1, "little")).decode("utf-8")),
+])
+def test_invalid_output_type(client, input_type, input_value):
+    resp = post(client, {"input": input_value, "inputType": input_type, "outputType": "unknown"})
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["result"] is None
-    assert data["error"] is not None
+    assert "Invalid output type" in data["error"]
 
 
 @pytest.mark.parametrize("output_type", ["binary", "octal", "decimal", "hexadecimal", "base64"]) 
@@ -84,6 +88,6 @@ def test_invalid_input_type(client, output_type):
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["result"] is None
-    assert data["error"] is not None
+    assert "Invalid input type" in data["error"]
 
 

@@ -3,6 +3,7 @@ from num2words import num2words
 from text2digits import text2digits
 import base64
 import re
+import binascii
 
 app = Flask(__name__)
 
@@ -46,21 +47,18 @@ def number_to_text(number):
 def base64_to_number(b64_str):
     """Convert base64 to integer (little-endian)"""
     try:
-        decoded_bytes = base64.b64decode(b64_str)
+        decoded_bytes = base64.b64decode(b64_str, validate=True)
         return int.from_bytes(decoded_bytes, byteorder='little')
-    except:
-        raise ValueError("Invalid base64 input")
+    except (binascii.Error, ValueError):
+        raise ValueError("Invalid base64 input: not a valid base64-encoded string")
 
 def number_to_base64(number):
     """Convert integer to base64 (little-endian)"""
-    try:
-        if number < 0:
-            raise ValueError("Unable to convert to base64")
-        byte_count = (number.bit_length() + 7) // 8
-        number_bytes = number.to_bytes(byte_count, byteorder='little', signed=False)
-        return base64.b64encode(number_bytes).decode('utf-8')
-    except:
-        raise ValueError("Unable to convert to base64")
+    if number < 0:
+        raise ValueError("Base64 does not support negative integers")
+    byte_count = (number.bit_length() + 7) // 8
+    number_bytes = number.to_bytes(byte_count, byteorder='little', signed=False)
+    return base64.b64encode(number_bytes).decode('utf-8')
 
 @app.route('/')
 def index():
@@ -76,19 +74,30 @@ def convert():
         
         # Convert input to integer based on input type
         if input_type == 'text':
-            number = text_to_number(input_value)
+            try:
+                number = text_to_number(input_value)
+            except Exception:
+                raise ValueError(f"Invalid text input: could not parse number from '{input_value}'")
         elif input_type == 'binary':
+            if not re.fullmatch(r'[01]+', str(input_value)):
+                raise ValueError("Invalid binary input: only digits 0 and 1 are allowed")
             number = int(input_value, 2)
         elif input_type == 'octal':
+            if not re.fullmatch(r'[0-7]+', str(input_value)):
+                raise ValueError("Invalid octal input: only digits 0-7 are allowed")
             number = int(input_value, 8)
         elif input_type == 'decimal':
+            if not re.fullmatch(r'-?\d+', str(input_value)):
+                raise ValueError("Invalid decimal input: expected digits 0-9 (optionally prefixed by -)")
             number = int(input_value)
         elif input_type == 'hexadecimal':
+            if not re.fullmatch(r'[0-9a-fA-F]+', str(input_value)):
+                raise ValueError("Invalid hexadecimal input: expected characters 0-9 and a-f")
             number = int(input_value, 16)
         elif input_type == 'base64':
             number = base64_to_number(input_value)
         else:
-            raise ValueError("Invalid input type")
+            raise ValueError(f"Invalid input type: {input_type}")
             
         # Convert integer to output type
         if output_type == 'text':
@@ -104,7 +113,7 @@ def convert():
         elif output_type == 'base64':
             result = number_to_base64(number)
         else:
-            raise ValueError("Invalid output type")
+            raise ValueError(f"Invalid output type: {output_type}")
             
         return jsonify({'result': result, 'error': None})
     except Exception as e:
