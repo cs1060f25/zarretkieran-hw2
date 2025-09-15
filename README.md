@@ -39,6 +39,22 @@ Optionally, generate coverage:
 pytest --cov=api --cov-report=term-missing
 ```
 
+## Bugs encountered (before fixes)
+
+The following issues were discovered while developing and testing this project and have been fixed on the `bugfix` branch.
+
+- **Access denied on `http://localhost:5000` (HTTP 403)**: accessing `localhost:5000` returned a 403 while `127.0.0.1:5000` worked. Root cause: another process was bound to the IPv6/localhost address and returned 403 for requests routed to `localhost`. Workarounds/fixes applied: either stop the conflicting process or run the app on a different port or bind to all addresses. Tests/usage were adjusted to use `127.0.0.1` or an alternate port when appropriate.
+
+- **Port already in use when starting the server**: attempting to start the server sometimes produced "Address already in use" due to existing Python processes listening on port 5000. Resolution: stop the conflicting processes (e.g. `kill <pid>`) or run the app on a different port (example: `--port 5001`).
+
+- **Base64 endianness mismatch**: the original implementation encoded/decoded base64 using big-endian byte order, but the project/tests require **little-endian** (the convention used on Windows and macOS). This caused failing round-trip tests for larger integers. Fix: updated `api/index.py` to use little-endian for both encoding and decoding and to reject negative integers for base64 conversions.
+
+- **Limited text parsing for English words**: `text_to_number` initially only recognized very small single-word numbers (e.g. "zero" through "ten"). This made phrase examples such as "forty two" fail. Fix: integrated `text2digits` to parse multi-word phrases (with a small single-word fallback).
+
+- **Negative number behavior**: handling of negative numbers varied by output type in the original implementation. Tests were updated to assert sensible behavior, and base64 now rejects negative inputs explicitly.
+
+If you want to reproduce the original failures, check out the `bugfix` branch history before the fixes (commits are available on the remote repository).
+
 ## Usage
 
 1. Enter your input value in the text box
