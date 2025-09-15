@@ -1,6 +1,6 @@
 # NOTE
 
-I accidentally did not create a repo from the forked template before starting hw2. I just committed my changes to the bugfix branch of the public template (zarretkieran-hw2 in cs1060f25) after forking the original repo. I created this repo after completing the assignment, so all the files are complete, but the commit history remains in zarretkieran-hw2. To be clear, my commit history is in zarretkieran-hw2 (https://github.com/cs1060f25/zarretkieran-hw2) which is a public template, but the deployable repo is this one, zarretkieran-hw2-.
+I accidentally did not create a repo from the forked template before starting hw2. I just committed my changes to the bugfix branch of the public template (zarretkieran-hw2 in cs1060f25) after forking the original repo. I created the final deployable repo from the template AFTER completing the assignment, so all the files are complete, but the commit history remains in zarretkieran-hw2 (this repo). To be clear, my commit history is in zarretkieran-hw2 (https://github.com/cs1060f25/zarretkieran-hw2) which is a public template, but the deployable repo is this one, zarretkieran-hw2- (https://github.com/cs1060f25/zarretkieran-hw2-.git).
 
 # Numeric Converter - cs1060-hw2-base
 
