@@ -24,6 +24,21 @@ python api/index.py
 
 3. Open your web browser and navigate to `http://localhost:5000`
 
+## Testing
+
+Run the automated tests with pytest:
+
+```bash
+. hw2-env/bin/activate
+pytest -q
+```
+
+Optionally, generate coverage:
+
+```bash
+pytest --cov=api --cov-report=term-missing
+```
+
 ## Usage
 
 1. Enter your input value in the text box
